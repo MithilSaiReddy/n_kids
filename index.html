@@ -489,23 +489,7 @@
             { q: "What helps you grow big muscles?", a: "Soda", b: "Paneer", correct: 'b', icon: "💪" }
         ];
 
-        async function init() {
-            lucide.createIcons();
 
-            if (supabase) {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (session) {
-                    state.user = session.user;
-                    await fetchProfile();
-                    switchScreen('dashboard');
-                } else {
-                    setTimeout(() => switchScreen('login'), 2000);
-                }
-            } else {
-                setTimeout(() => switchScreen('login'), 2500);
-            }
-            renderPlanner();
-        }
 
         function showToast(msg, icon = "✨") {
             const toast = document.getElementById('toast');
@@ -778,6 +762,55 @@
                     document.getElementById('quiz-result-view').classList.remove('hidden');
                 }, 500);
             }
+        }
+
+        // FAIL-SAFE: If app doesn't load in 4 seconds, force login screen
+        const safetyTimer = setTimeout(() => {
+            console.warn("Safety Timeout Triggered: Forcing Login Screen");
+            const active = document.querySelector('.screen.active');
+            if (active && active.id === 'screen-splash') {
+                switchScreen('login');
+            }
+        }, 4000);
+
+        async function init() {
+            try {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+
+                // CHECK SUPABASE STATUS
+                let session = null;
+                if (supabase) {
+                    try {
+                        // Timeout the session check (don't wait forever)
+                        const sessionPromise = supabase.auth.getSession();
+                        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve({ data: { session: null } }), 3000));
+
+                        const result = await Promise.race([sessionPromise, timeoutPromise]);
+                        if (result && result.data) session = result.data.session;
+                    } catch (err) {
+                        console.warn("Supabase Session Check Failed:", err);
+                    }
+                }
+
+                clearTimeout(safetyTimer); // Clear safety if we got here naturally
+
+                if (session) {
+                    state.user = session.user;
+                    await fetchProfile(); // Try to fetch profile
+                    switchScreen('dashboard');
+                } else {
+                    // Normal flow: Wait a bit for splash effect then show login
+                    setTimeout(() => switchScreen('login'), 2000);
+                }
+            } catch (error) {
+                console.error("Critical Init Error:", error);
+                clearTimeout(safetyTimer);
+                switchScreen('login'); // Fallback to login on crash
+            }
+
+            renderPlanner();
         }
 
         window.onload = init;
