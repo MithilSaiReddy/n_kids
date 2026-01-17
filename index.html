@@ -456,9 +456,19 @@
         let supabase;
 
         try {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            if (!SUPABASE_KEY.startsWith('ey')) {
+                console.error("INVALID KEY FORMAT: Supabase Anon Keys must start with 'ey'.");
+                alert("CRITICAL ERROR: The Supabase Key you passed seems invalid.\nIt should be the 'anon' key starting with 'ey...', not a publishable key.\nPlease check your Supabase Dashboard > Project Settings > API.");
+            }
+            if (window.supabase) {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            } else {
+                console.error("Supabase Library not loaded");
+                alert("Network Error: Supabase SDK failed to load. Check your internet connection.");
+            }
         } catch (e) {
-            console.error("Supabase init failed. Check keys.");
+            console.error("Supabase init failed:", e);
+            alert("Supabase Error: " + e.message);
         }
 
         const indianMeals = {
