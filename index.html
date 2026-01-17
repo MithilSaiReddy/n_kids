@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#22c55e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>NutriKids - Smart Nutrition</title>
+
+    <!-- 1. Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 2. Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- 3. Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: contain;
+        }
+
+        /* Hide scrollbars */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Smooth Transitions */
+        .screen {
+            display: none;
+            min-height: 100vh;
+            min-height: 100dvh;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Glassmorphism */
+        .glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        /* Toast Animation */
+        #toast {
+            transform: translate(-50%, 100%);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #toast.show {
+            transform: translate(-50%, -20px);
+        }
+
+        /* Grid Item Pulse */
+        .active-press:active {
+            transform: scale(0.96);
+            transition: 0.1s;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-900 overflow-hidden">
+
+    <div class="flex h-screen w-full">
+
+        <!-- DESKTOP SIDEBAR -->
+        <aside class="hidden md:flex w-72 flex-col bg-white border-r border-gray-100 p-6 z-50">
+            <div class="flex items-center gap-3 px-2 mb-10 mt-2">
+                <div class="w-10 h-10 bg-green-100 rounded-2xl flex items-center justify-center text-2xl">🍎</div>
+                <h1 class="text-2xl font-black tracking-tight text-gray-800">NutriKids</h1>
+            </div>
+
+            <nav class="flex-1 space-y-3">
+                <button onclick="switchScreen('dashboard')"
+                    class="nav-item w-full flex items-center gap-4 p-4 rounded-[1.5rem] transition-all duration-300 group hover:bg-green-50"
+                    data-target="dashboard">
+                    <i data-lucide="layout-grid"
+                        class="w-6 h-6 text-gray-400 group-hover:text-green-600 transition-colors"></i>
+                    <span class="font-black text-gray-500 group-hover:text-gray-800">Dashboard</span>
+                </button>
+                <button onclick="switchScreen('planner')"
+                    class="nav-item w-full flex items-center gap-4 p-4 rounded-[1.5rem] transition-all duration-300 group hover:bg-green-50"
+                    data-target="planner">
+                    <i data-lucide="utensils"
+                        class="w-6 h-6 text-gray-400 group-hover:text-green-600 transition-colors"></i>
+                    <span class="font-black text-gray-500 group-hover:text-gray-800">Meal Plan</span>
+                </button>
+                <button onclick="switchScreen('game')"
+                    class="nav-item w-full flex items-center gap-4 p-4 rounded-[1.5rem] transition-all duration-300 group hover:bg-green-50"
+                    data-target="game">
+                    <i data-lucide="brain-circuit"
+                        class="w-6 h-6 text-gray-400 group-hover:text-green-600 transition-colors"></i>
+                    <span class="font-black text-gray-500 group-hover:text-gray-800">Games</span>
+                </button>
+                <button onclick="switchScreen('awareness')"
+                    class="nav-item w-full flex items-center gap-4 p-4 rounded-[1.5rem] transition-all duration-300 group hover:bg-green-50"
+                    data-target="awareness">
+                    <i data-lucide="lightbulb"
+                        class="w-6 h-6 text-gray-400 group-hover:text-green-600 transition-colors"></i>
+                    <span class="font-black text-gray-500 group-hover:text-gray-800">Learn</span>
+                </button>
+                <button onclick="switchScreen('profile')"
+                    class="nav-item w-full flex items-center gap-4 p-4 rounded-[1.5rem] transition-all duration-300 group hover:bg-green-50"
+                    data-target="profile">
+                    <i data-lucide="circle-user"
+                        class="w-6 h-6 text-gray-400 group-hover:text-green-600 transition-colors"></i>
+                    <span class="font-black text-gray-500 group-hover:text-gray-800">Profile</span>
+                </button>
+            </nav>
+
+            <div class="bg-gray-50 p-4 rounded-[1.5rem] flex items-center gap-3 border border-gray-100">
+                <div
+                    class="w-10 h-10 bg-gradient-to-tr from-green-400 to-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md">
+                    AS</div>
+                <div class="flex-1 min-w-0">
+                    <p class="font-black text-sm text-gray-800 truncate" id="sidebar-user-name">Arjun</p>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Level 4</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 relative flex flex-col min-w-0 w-full h-full">
+            <div class="w-full h-full bg-white md:bg-gray-50 md:p-4 lg:p-6 relative flex flex-col">
+                <div
+                    class="w-full h-full bg-white md:rounded-[2.5rem] md:shadow-sm md:border md:border-white/50 overflow-hidden relative flex flex-col">
+
+                    <div id="app-content" class="flex-1 overflow-y-auto scrollbar-hide pb-32 md:pb-0">
+
+                        <!-- 1. SPLASH -->
+                        <div id="screen-splash" class="screen active">
+                            <div
+                                class="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-green-400 to-emerald-600 text-white">
+                                <div class="bg-white p-8 rounded-[40px] mb-6 shadow-2xl animate-bounce">
+                                    <span class="text-7xl">🍎</span>
+                                </div>
+                                <h1 class="text-5xl font-black tracking-tight">NutriKids</h1>
+                                <p class="mt-3 font-bold opacity-90 text-lg">Eat Healthy, Play Hard</p>
+                            </div>
+                        </div>
+
+                        <!-- 2. LOGIN -->
+                        <div id="screen-login" class="screen">
+                            <div class="flex flex-col items-center justify-center min-h-screen p-8 text-center">
+                                <div class="mb-12">
+                                    <span class="text-7xl inline-block mb-4">🥦</span>
+                                    <h2 class="text-4xl font-black text-gray-800">Welcome!</h2>
+                                    <p class="text-gray-500 font-medium">Your child's healthy journey starts here.</p>
+                                </div>
+                                <div class="w-full space-y-4">
+                                    <input type="email" placeholder="Email Address"
+                                        class="w-full p-5 bg-gray-100 rounded-3xl border-none focus:ring-4 focus:ring-green-200 outline-none transition-all font-bold"
+                                        value="parent@nutrikids.com">
+                                    <button onclick="handleLogin()"
+                                        class="w-full bg-green-500 text-white font-black py-5 rounded-3xl shadow-xl shadow-green-200 active-press">
+                                        Start Now
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. DASHBOARD -->
+                        <div id="screen-dashboard" class="screen">
+                            <header
+                                class="p-6 glass border-b border-gray-100 flex justify-between items-center sticky top-0 z-30">
+                                <div>
+                                    <h2 class="text-gray-400 text-[10px] font-black tracking-[0.2em] uppercase">Daily
+                                        Tracker</h2>
+                                    <h1 class="text-2xl font-black text-gray-800"><span id="user-name">Arjun</span>'s
+                                        Stats</h1>
+                                </div>
+                                <div
+                                    class="bg-yellow-400 text-white px-4 py-2 rounded-2xl flex items-center font-black shadow-lg shadow-yellow-100">
+                                    <i data-lucide="star" class="w-4 h-4 mr-1 fill-current"></i> <span
+                                        id="dash-points">120</span>
+                                </div>
+                            </header>
+
+                            <main class="p-6 space-y-6">
+                                <!-- Water -->
+                                <div
+                                    class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[2.5rem] p-7 text-white shadow-2xl shadow-blue-200 relative overflow-hidden">
+                                    <div class="relative z-10 mb-6">
+                                        <h3 class="font-black text-2xl">Water Goals</h3>
+                                        <p class="text-sm opacity-80">Drink 6 glasses for 20 bonus stars!</p>
+                                    </div>
+                                    <div id="water-buttons"
+                                        class="flex justify-between items-center bg-white/10 p-3 rounded-3xl backdrop-blur-md">
+                                        <!-- Generated by JS -->
+                                    </div>
+                                </div>
+
+                                <!-- Progress Section -->
+                                <div class="flex justify-between items-center px-2">
+                                    <h3 class="font-black text-xl text-gray-800">Today's Bites</h3>
+                                    <span
+                                        class="text-xs font-black text-green-500 bg-green-50 px-3 py-1 rounded-full">LIVE</span>
+                                </div>
+
+                                <div id="daily-log-container" class="space-y-4">
+                                    <!-- Generated by JS -->
+                                </div>
+
+                                <!-- Fast Actions -->
+                                <div class="grid grid-cols-2 gap-4 pt-2">
+                                    <div onclick="switchScreen('planner')"
+                                        class="bg-orange-50 p-6 rounded-[2.5rem] border border-orange-100 active-press">
+                                        <div
+                                            class="bg-orange-500 w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-4 shadow-lg shadow-orange-100">
+                                            <i data-lucide="utensils" class="w-7 h-7"></i>
+                                        </div>
+                                        <h4 class="font-black text-orange-900 text-lg">Meal Plans</h4>
+                                        <p class="text-xs text-orange-700/70 font-bold">Eat the rainbow!</p>
+                                    </div>
+                                    <div onclick="switchScreen('awareness')"
+                                        class="bg-emerald-50 p-6 rounded-[2.5rem] border border-emerald-100 active-press">
+                                        <div
+                                            class="bg-emerald-500 w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-4 shadow-lg shadow-emerald-100">
+                                            <i data-lucide="award" class="w-7 h-7"></i>
+                                        </div>
+                                        <h4 class="font-black text-emerald-900 text-lg">Education</h4>
+                                        <p class="text-xs text-emerald-700/70 font-bold">Learn Hero Food</p>
+                                    </div>
+                                </div>
+                            </main>
+                        </div>
+
+                        <!-- 4. MEAL PLANNER -->
+                        <div id="screen-planner" class="screen">
+                            <header class="p-6 glass border-b border-gray-100 flex items-center sticky top-0 z-30">
+                                <button onclick="switchScreen('dashboard')"
+                                    class="p-4 bg-gray-100 rounded-full mr-4 active-press"><i data-lucide="chevron-left"
+                                        class="w-6 h-6"></i></button>
+                                <h2 class="text-2xl font-black">Healthy Bites</h2>
+                            </header>
+                            <div id="planner-content" class="p-6 space-y-8">
+                                <!-- Generated by JS -->
+                            </div>
+                        </div>
+
+                        <!-- 5. AWARENESS -->
+                        <div id="screen-awareness" class="screen">
+                            <header class="p-6 flex items-center">
+                                <button onclick="switchScreen('dashboard')"
+                                    class="p-4 bg-gray-100 rounded-full mr-4 active-press"><i data-lucide="chevron-left"
+                                        class="w-6 h-6"></i></button>
+                                <h2 class="text-2xl font-black uppercase tracking-tight">Hero Food</h2>
+                            </header>
+                            <div class="p-6 space-y-6">
+                                <div class="bg-green-500 text-white p-5 rounded-[2rem] shadow-xl shadow-green-100">
+                                    <h3 class="font-black text-xl mb-1">Immunity Boosters 🛡️</h3>
+                                    <p class="text-sm opacity-90">Eat these to never get sick!</p>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div
+                                        class="bg-white p-6 rounded-[2rem] border-2 border-green-50 shadow-sm text-center">
+                                        <span class="text-5xl block mb-3">🥕</span>
+                                        <h4 class="font-black text-gray-800">Carrots</h4>
+                                        <p class="text-[10px] text-gray-400 font-bold mt-1">NIGHT VISION!</p>
+                                    </div>
+                                    <div
+                                        class="bg-white p-6 rounded-[2rem] border-2 border-green-50 shadow-sm text-center">
+                                        <span class="text-5xl block mb-3">🥜</span>
+                                        <h4 class="font-black text-gray-800">Nuts</h4>
+                                        <p class="text-[10px] text-gray-400 font-bold mt-1">SUPER BRAIN!</p>
+                                    </div>
+                                </div>
+                                <div class="bg-red-50 p-6 rounded-[2rem] border-2 border-red-100">
+                                    <h4 class="text-red-600 font-black mb-2 uppercase text-xs tracking-widest">Energy
+                                        Drainers 👾</h4>
+                                    <div class="flex items-center space-x-4">
+                                        <span class="text-4xl grayscale">🥤</span>
+                                        <p class="text-sm text-red-900 font-bold leading-tight">Sugary sodas take away
+                                            your focus energy.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 6. GAME -->
+                        <div id="screen-game" class="screen bg-indigo-50">
+                            <div class="flex flex-col items-center justify-center min-h-[90vh] p-8">
+                                <div id="quiz-question-view" class="w-full max-w-sm">
+                                    <div
+                                        class="bg-white p-10 rounded-[3rem] shadow-2xl border-b-8 border-indigo-200 text-center animate-fade-in">
+                                        <div id="q-icon"
+                                            class="text-8xl mb-10 inline-block bg-indigo-50 w-28 h-28 flex items-center justify-center rounded-[2rem]">
+                                            🧠</div>
+                                        <h2 id="q-text" class="text-2xl font-black mb-10 text-gray-800 leading-tight">
+                                            Question?</h2>
+                                        <div class="space-y-4">
+                                            <button onclick="handleAnswer('a')" id="btn-a"
+                                                class="w-full p-6 bg-indigo-500 text-white font-black rounded-3xl shadow-lg active-press">Option
+                                                A</button>
+                                            <button onclick="handleAnswer('b')" id="btn-b"
+                                                class="w-full p-6 bg-white text-indigo-500 font-black border-4 border-indigo-500 rounded-3xl active-press">Option
+                                                B</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="quiz-result-view" class="hidden text-center">
+                                    <div class="bg-white p-10 rounded-[3rem] shadow-2xl text-center animate-bounce">
+                                        <span class="text-9xl mb-6 block">🏆</span>
+                                        <h2 class="text-4xl font-black text-gray-800 mb-2">WOW!</h2>
+                                        <p class="text-gray-500 font-bold mb-10">You're getting smarter!</p>
+                                    </div>
+                                    <button onclick="switchScreen('dashboard')"
+                                        class="mt-10 bg-green-500 text-white px-16 py-6 rounded-full font-black shadow-2xl active-press text-xl">COLLECT
+                                        STARS</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 7. PROFILE -->
+                        <div id="screen-profile" class="screen">
+                            <header class="p-6 flex items-center">
+                                <button onclick="switchScreen('dashboard')"
+                                    class="p-4 bg-gray-100 rounded-full mr-4 active-press"><i data-lucide="chevron-left"
+                                        class="w-6 h-6"></i></button>
+                                <h2 class="text-2xl font-black">My Profile</h2>
+                            </header>
+                            <div class="p-8 text-center space-y-10">
+                                <div class="relative inline-block">
+                                    <div
+                                        class="w-36 h-36 bg-gradient-to-tr from-green-400 to-blue-500 rounded-full flex items-center justify-center text-6xl border-8 border-white shadow-2xl">
+                                        👶</div>
+                                    <div class="absolute bottom-2 right-2 bg-white p-2 rounded-full shadow-lg"><i
+                                            data-lucide="camera" class="w-5 h-5 text-gray-400"></i></div>
+                                </div>
+                                <div>
+                                    <h3 class="text-3xl font-black text-gray-800">Arjun Sharma</h3>
+                                    <p class="text-gray-400 font-bold text-sm tracking-widest uppercase mt-2">Level 4
+                                        Nutri-Hero</p>
+                                </div>
+                                <div class="bg-gray-50 p-6 rounded-[2.5rem] space-y-4 text-left">
+                                    <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                                        <span class="font-black text-gray-500 text-sm">AGE</span>
+                                        <span class="font-black text-gray-800">8 Years</span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-2">
+                                        <span class="font-black text-gray-500 text-sm">GENDER</span>
+                                        <span class="font-black text-gray-800">Male</span>
+                                    </div>
+                                </div>
+                                <button onclick="handleLogout()"
+                                    class="w-full flex items-center justify-center p-6 text-red-500 font-black border-4 border-red-50 rounded-[2.5rem] active:bg-red-50 transition-colors">
+                                    <i data-lucide="log-out" class="w-6 h-6 mr-2"></i> Log Out
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB NAVIGATION (Mobile Only) -->
+                    <nav id="bottom-nav"
+                        class="hidden fixed bottom-0 left-0 right-0 w-full flex justify-center z-50 pointer-events-none md:hidden transition-transform duration-300">
+                        <div
+                            class="w-full pointer-events-auto bg-white/90 glass border-t border-gray-100 px-8 flex justify-between items-center h-[90px] pb-[var(--safe-area-inset-bottom)]">
+                            <button onclick="switchScreen('dashboard')"
+                                class="nav-btn flex flex-col items-center justify-center w-12 text-green-500"
+                                data-target="dashboard">
+                                <i data-lucide="layout-grid" class="w-6 h-6 stroke-[3px]"></i>
+                                <span class="text-[9px] font-black mt-1 uppercase">Home</span>
+                            </button>
+                            <button onclick="switchScreen('planner')"
+                                class="nav-btn flex flex-col items-center justify-center w-12 text-gray-300"
+                                data-target="planner">
+                                <i data-lucide="utensils-crossed" class="w-6 h-6"></i>
+                                <span class="text-[9px] font-black mt-1 uppercase opacity-0">Eat</span>
+                            </button>
+                            <!-- CENTER FAB -->
+                            <div class="relative -top-8">
+                                <button onclick="switchScreen('game')"
+                                    class="w-16 h-16 rounded-3xl flex items-center justify-center text-white shadow-2xl shadow-green-200 bg-green-500 active-press">
+                                    <i data-lucide="brain-circuit" class="w-8 h-8 text-white"></i>
+                                </button>
+                            </div>
+                            <button onclick="switchScreen('awareness')"
+                                class="nav-btn flex flex-col items-center justify-center w-12 text-gray-300"
+                                data-target="awareness">
+                                <i data-lucide="lightbulb" class="w-6 h-6"></i>
+                                <span class="text-[9px] font-black mt-1 uppercase opacity-0">Learn</span>
+                            </button>
+                            <button onclick="switchScreen('profile')"
+                                class="nav-btn flex flex-col items-center justify-center w-12 text-gray-300"
+                                data-target="profile">
+                                <i data-lucide="circle-user" class="w-6 h-6"></i>
+                                <span class="text-[9px] font-black mt-1 uppercase opacity-0">Me</span>
+                            </button>
+                        </div>
+                    </nav>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- CUSTOM TOAST -->
+    <div id="toast"
+        class="fixed bottom-32 left-1/2 -translate-x-1/2 z-[100] bg-gray-900 text-white px-6 py-4 rounded-[2rem] shadow-2xl flex items-center space-x-3 pointer-events-none">
+        <div id="toast-icon" class="text-xl">✨</div>
+        <div id="toast-msg" class="font-black text-sm">Success!</div>
+    </div>
+
+    <script>
+        const state = {
+            user: null,
+            points: 120,
+            water: 3,
+            logs: [],
+            qIndex: 0
+        };
+
+        const indianMeals = {
+            Breakfast: [
+                { id: 1, name: "Yellow Poha", energy: "Active", icon: "🥣", points: 15 },
+                { id: 2, name: "Fluffy Idli", energy: "Power", icon: "⚪", points: 20 },
+                { id: 3, name: "Egg Paratha", energy: "Protein", icon: "🫓", points: 25 }
+            ],
+            Lunch: [
+                { id: 4, name: "Dal & Rice Bowl", energy: "Focus", icon: "🍛", points: 15 },
+                { id: 5, name: "Paneer & Roti", energy: "Growth", icon: "🥗", points: 20 },
+                { id: 6, name: "Rajma Chawal", energy: "Strength", icon: "🍲", points: 25 }
+            ]
+        };
+
+        const questions = [
+            { q: "Which makes your eyes like a hawk?", a: "Carrots", b: "Cake", correct: 'a', icon: "👁️" },
+            { q: "What helps you grow big muscles?", a: "Soda", b: "Paneer", correct: 'b', icon: "💪" }
+        ];
+
+        function init() {
+            setTimeout(() => switchScreen('login'), 2500);
+            renderPlanner();
+            lucide.createIcons();
+        }
+
+        function showToast(msg, icon = "✨") {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            document.getElementById('toast-icon').innerText = icon;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function switchScreen(screenName) {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            const target = document.getElementById(`screen-${screenName}`);
+            if (target) target.classList.add('active');
+
+            const nav = document.getElementById('bottom-nav');
+            if (['dashboard', 'planner', 'awareness', 'game', 'profile'].includes(screenName)) {
+                nav.classList.remove('hidden');
+                updateNavStyles(screenName);
+            } else {
+                nav.classList.add('hidden');
+            }
+
+            if (screenName === 'dashboard') updateDashboard();
+            if (screenName === 'game') resetQuiz();
+
+            // Re-render icons and scroll to top
+            document.getElementById('app-content').scrollTo(0, 0);
+            setTimeout(() => lucide.createIcons(), 50);
+        }
+
+        function updateNavStyles(activeScreen) {
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                const isTarget = btn.dataset.target === activeScreen;
+                const icon = btn.querySelector('svg');
+                const text = btn.querySelector('span');
+
+                if (isTarget) {
+                    btn.classList.replace('text-gray-300', 'text-green-500');
+                    if (text) text.classList.remove('opacity-0');
+                    if (icon) icon.setAttribute('stroke-width', '3');
+                } else {
+                    btn.classList.replace('text-green-500', 'text-gray-300');
+                    if (text) text.classList.add('opacity-0');
+                    if (icon) icon.setAttribute('stroke-width', '2');
+                }
+            });
+        }
+
+        function handleLogin() {
+            state.user = { name: 'Arjun' };
+            document.getElementById('user-name').innerText = state.user.name;
+            switchScreen('dashboard');
+            showToast("Logged in as Arjun", "👋");
+        }
+
+        function handleLogout() {
+            state.user = null;
+            state.points = 120;
+            state.logs = [];
+            switchScreen('login');
+        }
+
+        function updateDashboard() {
+            document.getElementById('dash-points').innerText = state.points;
+            renderWater();
+            renderLogs();
+        }
+
+        function renderWater() {
+            const container = document.getElementById('water-buttons');
+            container.innerHTML = '';
+            for (let i = 1; i <= 6; i++) {
+                const isActive = state.water >= i;
+                const btn = document.createElement('button');
+                btn.className = `h-10 w-10 rounded-2xl flex items-center justify-center transition-all duration-300 ${isActive ? 'bg-white text-blue-500 scale-110 shadow-lg' : 'text-blue-100 hover:bg-white/10'}`;
+                btn.innerHTML = '💧';
+                btn.onclick = () => {
+                    state.water = i;
+                    renderWater();
+                    if (i === 6) showToast("Goal Met! +20 Stars", "🏆");
+                };
+                container.appendChild(btn);
+            }
+        }
+
+        function renderLogs() {
+            const container = document.getElementById('daily-log-container');
+            container.innerHTML = '';
+
+            if (state.logs.length === 0) {
+                container.innerHTML = `<div class="bg-gray-50 border-2 border-dashed border-gray-100 p-8 rounded-[2.5rem] text-center text-gray-400 font-bold text-sm italic">Nothing eaten yet. Add some fuel!</div>`;
+                return;
+            }
+
+            state.logs.slice().reverse().slice(0, 3).forEach(log => {
+                const el = document.createElement('div');
+                el.className = 'bg-white p-5 rounded-[2.5rem] flex items-center shadow-sm border border-gray-50 animate-fade-in';
+                el.innerHTML = `
+                    <span class="text-3xl mr-4 bg-neutral-50 w-14 h-14 flex items-center justify-center rounded-2xl">${log.icon}</span>
+                    <div class="flex-1">
+                        <h4 class="font-black text-gray-800">${log.name}</h4>
+                        <p class="text-[10px] text-gray-400 font-black tracking-widest uppercase">${log.time}</p>
+                    </div>
+                    <div class="text-green-500 font-black bg-green-50 px-3 py-2 rounded-2xl">+${log.points} ★</div>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        function renderPlanner() {
+            const container = document.getElementById('planner-content');
+            container.innerHTML = '';
+
+            Object.entries(indianMeals).forEach(([category, foods]) => {
+                const section = document.createElement('div');
+                section.innerHTML = `
+                    <h3 class="text-xl font-black text-gray-800 mb-4 px-2">${category}</h3>
+                    <div class="space-y-3" id="cat-${category}"></div>
+                `;
+                container.appendChild(section);
+
+                const list = section.querySelector(`#cat-${category}`);
+                foods.forEach(food => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white border-2 border-gray-50 p-5 rounded-[2.5rem] flex items-center justify-between shadow-sm active-press";
+                    card.innerHTML = `
+                        <div class="flex items-center">
+                            <div class="w-14 h-14 bg-gray-50 rounded-[1.5rem] flex items-center justify-center text-3xl mr-4">${food.icon}</div>
+                            <div>
+                                <h4 class="font-black text-gray-800 text-sm">${food.name}</h4>
+                                <span class="text-[9px] text-green-500 font-black uppercase tracking-widest bg-green-50 px-2 py-0.5 rounded-lg">${food.energy}</span>
+                            </div>
+                        </div>
+                        <button onclick='addFood(${JSON.stringify(food)})' class="bg-green-500 text-white px-6 py-3 rounded-2xl font-black text-xs shadow-lg shadow-green-100">ADD</button>
+                    `;
+                    list.appendChild(card);
+                });
+            });
+        }
+
+        function addFood(food) {
+            state.logs.push({ ...food, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+            state.points += food.points;
+            showToast(`Added ${food.name}!`, "🍎");
+            switchScreen('dashboard');
+        }
+
+        function resetQuiz() {
+            state.qIndex = 0;
+            document.getElementById('quiz-question-view').classList.remove('hidden');
+            document.getElementById('quiz-result-view').classList.add('hidden');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const q = questions[state.qIndex];
+            document.getElementById('q-icon').innerText = q.icon;
+            document.getElementById('q-text').innerText = q.q;
+            document.getElementById('btn-a').innerText = q.a;
+            document.getElementById('btn-b').innerText = q.b;
+        }
+
+        function handleAnswer(choice) {
+            const q = questions[state.qIndex];
+            if (choice === q.correct) {
+                state.points += 20;
+                showToast("Correct! +20 Stars", "✅");
+            } else {
+                showToast("Try again!", "❌");
+            }
+
+            if (state.qIndex < questions.length - 1) {
+                state.qIndex++;
+                setTimeout(loadQuestion, 500);
+            } else {
+                setTimeout(() => {
+                    document.getElementById('quiz-question-view').classList.add('hidden');
+                    document.getElementById('quiz-result-view').classList.remove('hidden');
+                }, 500);
+            }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+
+</html>
