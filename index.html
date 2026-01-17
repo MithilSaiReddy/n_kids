@@ -172,24 +172,38 @@
                             </div>
                         </div>
 
-                        <!-- 2. LOGIN -->
                         <div id="screen-login" class="screen">
                             <div class="flex flex-col items-center justify-center min-h-screen p-8 text-center">
-                                <div class="mb-12">
+                                <div class="mb-8">
                                     <span class="text-7xl inline-block mb-4">🥦</span>
                                     <h2 class="text-4xl font-black text-gray-800">Welcome!</h2>
                                     <p class="text-gray-500 font-medium">Your child's healthy journey starts here.</p>
                                 </div>
+
+                                <!-- Auth Toggle -->
+                                <div class="flex space-x-8 mb-8 border-b-2 border-gray-100 w-full justify-center">
+                                    <button onclick="setAuthMode('login')" id="tab-login"
+                                        class="pb-2 text-xl font-black text-green-500 border-b-4 border-green-500 transition-all">Log
+                                        In</button>
+                                    <button onclick="setAuthMode('signup')" id="tab-signup"
+                                        class="pb-2 text-xl font-black text-gray-300 transition-all">Sign Up</button>
+                                </div>
+
                                 <div class="w-full space-y-4">
+                                    <input type="text" id="auth-name" placeholder="Child's Name"
+                                        class="hidden w-full p-5 bg-gray-50 rounded-3xl border-2 border-gray-100 focus:border-green-400 outline-none transition-all font-bold">
+
                                     <input type="email" id="email" placeholder="Email Address"
                                         class="w-full p-5 bg-gray-100 rounded-3xl border-none focus:ring-4 focus:ring-green-200 outline-none transition-all font-bold"
-                                        value="demo@nutrikids.com">
+                                        value="">
+
                                     <input type="password" id="password" placeholder="Password"
                                         class="w-full p-5 bg-gray-100 rounded-3xl border-none focus:ring-4 focus:ring-green-200 outline-none transition-all font-bold"
-                                        value="123456">
-                                    <button onclick="handleLogin()"
-                                        class="w-full bg-green-500 text-white font-black py-5 rounded-3xl shadow-xl shadow-green-200 active-press">
-                                        Start Now
+                                        value="">
+
+                                    <button onclick="handleAuth()" id="auth-btn"
+                                        class="w-full bg-green-500 text-white font-black py-5 rounded-3xl shadow-xl shadow-green-200 active-press transition-all hover:scale-[1.02]">
+                                        Log In
                                     </button>
                                 </div>
                             </div>
@@ -447,13 +461,14 @@
             points: 120,
             water: 3,
             logs: [],
-            qIndex: 0
+            qIndex: 0,
+            isSignup: false
         };
 
         // TODO: REPLACE WITH REAL KEYS
         const SUPABASE_URL = 'https://yxetcuuucibogrgumgtk.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_Zy4P53X-s5SJLKV3ju2WyA_x5aMHYEH';
-        let supabase;
+        let supabaseClient;
 
         try {
             if (!SUPABASE_KEY.startsWith('ey')) {
@@ -461,7 +476,7 @@
                 alert("CRITICAL ERROR: The Supabase Key you passed seems invalid.\nIt should be the 'anon' key starting with 'ey...', not a publishable key.\nPlease check your Supabase Dashboard > Project Settings > API.");
             }
             if (window.supabase) {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
             } else {
                 console.error("Supabase Library not loaded");
                 alert("Network Error: Supabase SDK failed to load. Check your internet connection.");
@@ -538,46 +553,86 @@
             });
         }
 
-        async function handleLogin() {
+        function setAuthMode(mode) {
+            state.isSignup = (mode === 'signup');
+            const nameInput = document.getElementById('auth-name');
+            const btn = document.getElementById('auth-btn');
+            const tabLogin = document.getElementById('tab-login');
+            const tabSignup = document.getElementById('tab-signup');
+
+            if (state.isSignup) {
+                nameInput.classList.remove('hidden');
+                btn.innerText = "Create Account";
+                tabSignup.classList.add('text-green-500', 'border-b-4', 'border-green-500');
+                tabSignup.classList.remove('text-gray-300');
+                tabLogin.classList.remove('text-green-500', 'border-b-4', 'border-green-500');
+                tabLogin.classList.add('text-gray-300');
+            } else {
+                nameInput.classList.add('hidden');
+                btn.innerText = "Log In";
+                tabLogin.classList.add('text-green-500', 'border-b-4', 'border-green-500');
+                tabLogin.classList.remove('text-gray-300');
+                tabSignup.classList.remove('text-green-500', 'border-b-4', 'border-green-500');
+                tabSignup.classList.add('text-gray-300');
+            }
+        }
+
+        async function handleAuth() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const name = document.getElementById('auth-name').value;
 
-            if (supabase) {
-                // 1. Try Login
-                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            if (!email || !password) {
+                showToast("Please enter email & password", "⚠️");
+                return;
+            }
 
-                if (error) {
-                    // 2. If Login fails, Try Signup (Auto-create account for ease)
-                    const { data: sData, error: sError } = await supabase.auth.signUp({
+            if (state.isSignup && !name) {
+                showToast("Please enter your child's name", "⚠️");
+                return;
+            }
+
+            if (supabaseClient) {
+                if (state.isSignup) {
+                    // SIGN UP FLOW
+                    const { data, error } = await supabaseClient.auth.signUp({
                         email,
                         password,
-                        options: { data: { full_name: 'NutriKid' } }
+                        options: { data: { full_name: name } }
                     });
 
-                    if (sError) {
-                        showToast(sError.message, "❌");
-                        return;
+                    if (error) {
+                        showToast(error.message, "❌");
+                    } else {
+                        showToast("Account Created! Logging you in...", "🚀");
+                        state.user = data.user;
+                        await fetchProfile();
+                        switchScreen('dashboard');
                     }
-                    state.user = sData.user;
-                    showToast("New Account Created!", "🚀");
                 } else {
-                    state.user = data.user;
-                    showToast("Welcome Back!", "👋");
-                }
+                    // LOGIN FLOW
+                    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
-                await fetchProfile();
-                switchScreen('dashboard');
+                    if (error) {
+                        showToast(error.message, "❌");
+                    } else {
+                        state.user = data.user;
+                        showToast("Welcome Back!", "👋");
+                        await fetchProfile();
+                        switchScreen('dashboard');
+                    }
+                }
             } else {
                 // Fallback for Demo
-                state.user = { name: 'Arjun' };
+                state.user = { name: name || 'Arjun' };
                 document.getElementById('user-name').innerText = state.user.name;
                 switchScreen('dashboard');
-                showToast("Logged in as Arjun", "👋");
+                showToast("Logged in (Demo Mode)", "👋");
             }
         }
 
         async function handleLogout() {
-            if (supabase) await supabase.auth.signOut();
+            if (supabaseClient) await supabaseClient.auth.signOut();
             state.user = null;
             state.points = 120;
             state.logs = [];
@@ -585,10 +640,10 @@
         }
 
         async function fetchProfile() {
-            if (!state.user || !supabase) return;
+            if (!state.user || !supabaseClient) return;
 
             // Fetch Profile
-            const { data: profile } = await supabase.from('profiles').select('*').eq('id', state.user.id).single();
+            const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', state.user.id).single();
             if (profile) {
                 state.points = profile.points || 120;
                 document.getElementById('user-name').innerText = profile.full_name || 'Kiddo';
@@ -597,12 +652,12 @@
 
             // Fetch Water
             const today = new Date().toISOString().split('T')[0];
-            const { data: water } = await supabase.from('water_logs').select('count').eq('user_id', state.user.id).eq('date', today).single();
+            const { data: water } = await supabaseClient.from('water_logs').select('count').eq('user_id', state.user.id).eq('date', today).single();
             if (water) state.water = water.count;
             else state.water = 0;
 
             // Fetch Food Logs
-            const { data: logs } = await supabase.from('food_logs').select('*').eq('user_id', state.user.id).order('created_at', { ascending: false }).limit(5);
+            const { data: logs } = await supabaseClient.from('food_logs').select('*').eq('user_id', state.user.id).order('created_at', { ascending: false }).limit(5);
             if (logs) state.logs = logs.map(l => ({ name: l.food_name, icon: l.food_icon, points: l.points, time: new Date(l.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }));
 
             updateDashboard();
@@ -623,9 +678,9 @@
                 btn.className = `h-10 w-10 rounded-2xl flex items-center justify-center transition-all duration-300 ${isActive ? 'bg-white text-blue-500 scale-110 shadow-lg' : 'text-blue-100 hover:bg-white/10'}`;
                 btn.innerHTML = '💧';
                 btn.onclick = async () => {
-                    if (supabase) {
+                    if (supabaseClient) {
                         const today = new Date().toISOString().split('T')[0];
-                        await supabase.from('water_logs').upsert({ user_id: state.user.id, date: today, count: i }, { onConflict: 'user_id, date' });
+                        await supabaseClient.from('water_logs').upsert({ user_id: state.user.id, date: today, count: i }, { onConflict: 'user_id, date' });
                         state.water = i;
                         renderWater();
                         if (i === 6) showToast("Goal Met! +20 Stars", "🏆");
@@ -695,17 +750,17 @@
         }
 
         async function addFood(food) {
-            if (supabase) {
-                const { error } = await supabase.from('food_logs').insert({ user_id: state.user.id, food_name: food.name, food_icon: food.icon, points: food.points });
+            if (supabaseClient) {
+                const { error } = await supabaseClient.from('food_logs').insert({ user_id: state.user.id, food_name: food.name, food_icon: food.icon, points: food.points });
                 if (error) {
                     showToast("Error saving food", "⚠️");
                     return;
                 }
 
                 // Update Points
-                const { data: profile } = await supabase.from('profiles').select('points').eq('id', state.user.id).single();
+                const { data: profile } = await supabaseClient.from('profiles').select('points').eq('id', state.user.id).single();
                 const newPoints = (profile ? profile.points : 0) + food.points;
-                await supabase.from('profiles').update({ points: newPoints }).eq('id', state.user.id);
+                await supabaseClient.from('profiles').update({ points: newPoints }).eq('id', state.user.id);
 
                 state.points = newPoints;
                 state.logs.push({ ...food, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
@@ -739,10 +794,10 @@
             if (choice === q.correct) {
                 const bonus = 20;
 
-                if (supabase) {
-                    const { data: profile } = await supabase.from('profiles').select('points').eq('id', state.user.id).single();
+                if (supabaseClient) {
+                    const { data: profile } = await supabaseClient.from('profiles').select('points').eq('id', state.user.id).single();
                     const newPoints = (profile ? profile.points : 0) + bonus;
-                    await supabase.from('profiles').update({ points: newPoints }).eq('id', state.user.id);
+                    await supabaseClient.from('profiles').update({ points: newPoints }).eq('id', state.user.id);
                     state.points = newPoints;
                 } else {
                     state.points += bonus;
@@ -781,10 +836,10 @@
 
                 // CHECK SUPABASE STATUS
                 let session = null;
-                if (supabase) {
+                if (supabaseClient) {
                     try {
                         // Timeout the session check (don't wait forever)
-                        const sessionPromise = supabase.auth.getSession();
+                        const sessionPromise = supabaseClient.auth.getSession();
                         const timeoutPromise = new Promise(resolve => setTimeout(() => resolve({ data: { session: null } }), 3000));
 
                         const result = await Promise.race([sessionPromise, timeoutPromise]);
